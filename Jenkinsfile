@@ -1,78 +1,39 @@
 pipeline {
     agent any
     stages {
-        stage('Build Images') {
-            parallel {
-                stage('cast-service') {
-                    steps {
-                        script {
-                            // Build the first Docker image
-                            dir('cast-service') {
-                                sh 'docker build -t eltemume/cast:latest .'
-                            }
-                        }
-                    }
-                }
-                stage('movie-service') {
-                    steps {
-                        script {
-                            // Build the second Docker image
-                            dir('movie-service') {
-                                sh 'docker build -t eltemume/movie:latest .'
-                            }
-                        }
-                    }
-                }
+        stage('Clone Repository') {
+            steps {
+                // Clone the repository from the master branch
+                git url: 'https://github.com/Elmo36/Jenkins_devops_exams.git', branch: 'master'
             }
         }
-        stage('Test Images') {
-            parallel {
-                stage('Test cast-service') {
-                    steps {
-                        script {
-                            // Run tests for the first app
-                            sh 'docker run eltemume/cast:latest test'
-                        }
-                    }
-                }
-                stage('Test movie-service') {
-                    steps {
-                        script {
-                            // Run tests for the second app
-                            sh 'docker run eltemume/cast:latest test'
-                        }
-                    }
-                }
-            }
-        }
-        stage('Deploy to Staging') {
+        stage('Build Docker Images') {
             steps {
                 script {
-                    // Deploy both applications to the staging environment
-                    sh 'kubectl apply -f k8s/deployment-cast-staging.yaml -n staging'
-                    sh 'kubectl apply -f k8s/deployment-movie-staging.yaml -n staging'
+                    // Pull existing images if needed
+                    sh 'docker pull eltemume/cast:tag'
+                    sh 'docker pull eltemume/movie:tag'
                 }
             }
         }
-        stage('Deploy to Production') {
-            when {
-                branch 'master'
-            }
+        stage('Deploy to Kubernetes with Helm') {
             steps {
                 script {
-                    // Deploy both applications to the production environment
-                    sh 'kubectl apply -f k8s/deployment-cast-prod.yaml -n prod'
-                    sh 'kubectl apply -f k8s/deployment-movie-prod.yaml -n prod'
+                    // Ensure Helm is initialized (optional based on your setup)
+                    sh 'helm repo update'
+                    
+                    // Deploy using Helm to the dev namespace
+                    sh 'helm upgrade --install jenkex ./jenkex --namespace dev'
                 }
             }
         }
     }
     post {
         success {
-            echo 'Deployment completed successfully for both applications!'
+            echo 'Deployment successful!'
         }
         failure {
-            echo 'Deployment failed for one or both applications!'
+            echo 'Deployment failed!'
         }
     }
 }

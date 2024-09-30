@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert
+    kompose.version: 1.21.0 (992df58d8)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: movie-service
+  name: {{ .Release.Name }}-movie-service
+spec:
+  replicas: {{ .Values.movieService.replicaCount }}
+  selector:
+    matchLabels:
+      io.kompose.service: movie-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert
+        kompose.version: 1.21.0 (992df58d8)
+      labels:
+        io.kompose.service: movie-service
+    spec:
+      containers:
+      - args:
+        - uvicorn
+        - app.main:app
+        - --host
+        - 0.0.0.0
+        - --port
+        - "8000"
+        env:
+        - name: CAST_SERVICE_HOST_URL
+          value: http://{{ .Release.Name }}-cast-service:8000/api/v1/casts/
+        - name: DATABASE_URI
+          value: postgresql://{{ .Values.movieDb.username }}:{{ .Values.movieDb.password }}@{{ .Release.Name }}-movie-db/{{ .Values.movieDb.database }}
+        image: {{ .Values.movieService.image.repository }}:{{ .Values.movieService.image.tag }}
+        imagePullPolicy: IfNotPresent
+        name: movie-service
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - mountPath: /app/
+          name: movie-service-claim0
+      volumes:
+      - name: movie-service-claim0
+        persistentVolumeClaim:
+          claimName: movie-service-claim0
+
