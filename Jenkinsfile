@@ -1,117 +1,88 @@
 pipeline {
-    agent any
+    agent any // Use any available agent
 
     stages {
-<<<<<<< HEAD
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
-                // Clone the repository from the master branch
+                // Checkout the code from GitHub
                 git url: 'https://github.com/Elmo36/Jenkins_devops_exams.git', branch: 'master'
             }
         }
-        stage('Build Docker Images') {
-            steps {
-                script {
-                    // Pull existing images if needed
-                    sh 'docker pull eltemume/cast:tag'
-                    sh 'docker pull eltemume/movie:tag'
-                }
-            }
-        }
-        stage('Deploy to Kubernetes with Helm') {
-            steps {
-                script {
-                    // Ensure Helm is initialized (optional based on your setup)
-                    sh 'helm repo update'
-                    
-                    // Deploy using Helm to the dev namespace
-                    sh 'helm upgrade --install jenkex ./jenkex --namespace dev'
-=======
-        stage('Checkout SCM') {
-            steps {
-                checkout scm
-            }
-        }
 
-        stage('Build Images') {
-            parallel {
-                stage('Build cast-service') {
-                    steps {
-                        script {
-                            sh 'docker build -t eltemume/cast:tag ./cast-service'
-                        }
-                    }
-                }
-                stage('Build movie-service') {
-                    steps {
-                        script {
-                            sh 'docker build -t eltemume/movie:tag ./movie-service'
-                        }
-                    }
+        stage('Build Cast Service') {
+            steps {
+                // Build the Docker image for the cast service
+                script {
+                    sh 'docker build -t eltemume/cast:tag ./cast-service'
                 }
             }
         }
 
-        stage('Test Images') {
-            parallel {
-                stage('Test cast-service') {
-                    steps {
-                        script {
-                            sh 'docker run eltemume/cast:tag'
-                        }
-                    }
+        stage('Build Movie Service') {
+            steps {
+                // Build the Docker image for the movie service
+                script {
+                    sh 'docker build -t eltemume/movie:tag ./movie-service'
                 }
-                stage('Test movie-service') {
-                    steps {
-                        script {
-                            sh 'docker run eltemume/movie:tag'
-                        }
-                    }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // Add your testing commands here
+                script {
+                    sh 'echo "Running tests..."'
+                    // For example: sh './run-tests.sh'
+                }
+            }
+        }
+
+        stage('Deploy to Dev') {
+            steps {
+                // Deploy to development environment
+                script {
+                    sh 'kubectl apply -f ./jenkex/templates/deployment.yaml -n dev'
+                }
+            }
+        }
+
+        stage('Deploy to QA') {
+            steps {
+                // Deploy to QA environment
+                script {
+                    sh 'kubectl apply -f ./jenkex/templates/deployment.yaml -n qa'
                 }
             }
         }
 
         stage('Deploy to Staging') {
             steps {
+                // Deploy to staging environment
                 script {
-                    if (fileExists('k8s/deployment-cast-staging.yaml')) {
-                        sh 'kubectl apply -f k8s/deployment-cast-staging.yaml -n staging'
-                    } else {
-                        error("Deployment file k8s/deployment-cast-staging.yaml does not exist.")
-                    }
+                    sh 'kubectl apply -f ./jenkex/templates/deployment.yaml -n staging'
                 }
             }
         }
 
         stage('Deploy to Production') {
             steps {
+                // Manual approval for production deployment
+                input 'Deploy to Production?'
                 script {
-                    // Check for production deployment file similarly
-                    if (fileExists('k8s/deployment-cast-production.yaml')) {
-                        sh 'kubectl apply -f k8s/deployment-cast-production.yaml -n production'
-                    } else {
-                        error("Deployment file k8s/deployment-cast-production.yaml does not exist.")
-                    }
->>>>>>> bcc20e945f8295b8a4860bf0fb8306da75f76802
+                    sh 'kubectl apply -f ./jenkex/templates/deployment.yaml -n prod'
                 }
             }
         }
     }
 
     post {
-        always {
-            echo 'Cleaning up...'
-            // Additional cleanup actions
-        }
         success {
-<<<<<<< HEAD
-            echo 'Deployment successful!'
-=======
-            echo 'Deployment completed successfully!'
->>>>>>> bcc20e945f8295b8a4860bf0fb8306da75f76802
+            // Actions to perform on success
+            echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Deployment failed!'
+            // Actions to perform on failure
+            echo 'Pipeline failed.'
         }
     }
 }
