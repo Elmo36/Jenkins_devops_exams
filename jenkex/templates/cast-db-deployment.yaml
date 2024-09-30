@@ -1,13 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert
-    kompose.version: 1.21.0 (992df58d8)
-  creationTimestamp: null
+  name: {{ .Release.Name }}-cast-db
   labels:
     io.kompose.service: cast-db
-  name: {{ .Release.Name }}-cast-db
 spec:
   replicas: {{ .Values.castDb.replicaCount }}
   selector:
@@ -17,9 +13,6 @@ spec:
     type: Recreate
   template:
     metadata:
-      annotations:
-        kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert
-        kompose.version: 1.21.0 (992df58d8)
       labels:
         io.kompose.service: cast-db
     spec:
@@ -41,4 +34,3 @@ spec:
       - name: postgres-data-cast
         persistentVolumeClaim:
           claimName: postgres-data-cast
-
