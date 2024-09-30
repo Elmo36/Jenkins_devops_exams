@@ -1,83 +1,103 @@
 pipeline {
     agent any
+
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('f8290316-e09c-4759-8d72-820925f0b8a9')
+        DOCKERHUB_CREDENTIALS = credentials('your-dockerhub-credentials-id')
     }
+
     stages {
-        stage('Cleanup') {
+        stage('Checkout') {
             steps {
-                script {
-                    docker.image('eltemume/movie:tag').remove(force: true, prune: true)
-                    docker.image('eltemume/cast:tag').remove(force: true, prune: true)
-                }
+                checkout scm
             }
         }
+
         stage('Build Movie Service') {
             steps {
                 script {
-                    movieServiceImage = docker.build("eltemume/movie:tag", "./movie-service")
+                    // Build the Docker image for Movie Service
+                    def movieImage = docker.build("movie-service:${env.BUILD_ID}")
                 }
             }
         }
+
         stage('Build Cast Service') {
             steps {
                 script {
-                    castServiceImage = docker.build("eltemume/cast:tag", "./cast-service")
+                    // Build the Docker image for Cast Service
+                    def castImage = docker.build("cast-service:${env.BUILD_ID}")
                 }
             }
         }
+
+        stage('Cleanup') {
+            steps {
+                script {
+                    // Cleanup old images (if necessary)
+                    docker.image("movie-service:${env.BUILD_ID}").remove() // Correct usage
+                    docker.image("cast-service:${env.BUILD_ID}").remove()  // Correct usage
+                }
+            }
+        }
+
         stage('Push Movie Service') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'DOCKERHUB_CREDENTIALS') {
-                        movieServiceImage.push("tag")
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKERHUB_CREDENTIALS) {
+                        docker.image("movie-service:${env.BUILD_ID}").push()
                     }
                 }
             }
         }
+
         stage('Push Cast Service') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'DOCKERHUB_CREDENTIALS') {
-                        castServiceImage.push("tag")
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKERHUB_CREDENTIALS) {
+                        docker.image("cast-service:${env.BUILD_ID}").push()
                     }
                 }
             }
         }
+
         stage('Deploy to Dev') {
-            when {
-                branch 'dev'
-            }
             steps {
-                deployToK8s('dev')
+                script {
+                    // Your deployment logic here
+                }
             }
         }
+
         stage('Deploy to QA') {
-            when {
-                branch 'qa'
-            }
             steps {
-                deployToK8s('qa')
+                script {
+                    // Your deployment logic here
+                }
             }
         }
+
         stage('Deploy to Staging') {
-            when {
-                branch 'staging'
-            }
             steps {
-                deployToK8s('staging')
+                script {
+                    // Your deployment logic here
+                }
             }
         }
+
         stage('Deploy to Prod') {
-            when {
-                branch 'master'
-            }
             steps {
-                deployToK8s('prod')
+                script {
+                    // Your deployment logic here
+                }
             }
         }
     }
+
     post {
+        always {
+            echo 'Cleaning up...'
+            // Cleanup can also be added here if needed
+        }
         success {
             echo 'Pipeline completed successfully!'
         }
@@ -85,13 +105,4 @@ pipeline {
             echo 'Pipeline failed!'
         }
     }
-}
-
-def deployToK8s(namespace) {
-    sh """
-    kubectl apply -f k8s/movie-service-deployment.yaml --namespace=${namespace}
-    kubectl apply -f k8s/movie-service-service.yaml --namespace=${namespace}
-    kubectl apply -f k8s/cast-service-deployment.yaml --namespace=${namespace}
-    kubectl apply -f k8s/cast-service-service.yaml --namespace=${namespace}
-    """
 }
