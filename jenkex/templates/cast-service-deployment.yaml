@@ -1,13 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert
-    kompose.version: 1.21.0 (992df58d8)
-  creationTimestamp: null
+  name: {{ .Release.Name }}-cast-service
   labels:
     io.kompose.service: cast-service
-  name: {{ .Release.Name }}-cast-service
 spec:
   replicas: {{ .Values.castService.replicaCount }}
   selector:
@@ -17,9 +13,6 @@ spec:
     type: Recreate
   template:
     metadata:
-      annotations:
-        kompose.cmd: /snap/kompose/19/kompose-linux-amd64 convert
-        kompose.version: 1.21.0 (992df58d8)
       labels:
         io.kompose.service: cast-service
     spec:
@@ -46,4 +39,3 @@ spec:
       - name: cast-service-claim0
         persistentVolumeClaim:
           claimName: cast-service-claim0
-
