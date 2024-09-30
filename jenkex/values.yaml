@@ -25,5 +25,6 @@ movieService:
     tag: latest
   replicaCount: 1
 
-# Additional settings and configurations can go here
-
+service:
+  type: ClusterIP  # Change to your desired service type
+  port: 8002  # Ensure this matches your service's expected port
