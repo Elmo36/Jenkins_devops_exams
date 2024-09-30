@@ -1,9 +1,17 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
+        DOCKERHUB_CREDENTIALS = credentials('f8290316-e09c-4759-8d72-820925f0b8a9')
     }
     stages {
+        stage('Cleanup') {
+            steps {
+                script {
+                    docker.image('eltemume/movie:tag').remove(force: true, prune: true)
+                    docker.image('eltemume/cast:tag').remove(force: true, prune: true)
+                }
+            }
+        }
         stage('Build Movie Service') {
             steps {
                 script {
@@ -67,6 +75,14 @@ pipeline {
             steps {
                 deployToK8s('prod')
             }
+        }
+    }
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
