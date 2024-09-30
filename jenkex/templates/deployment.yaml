@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: {{ include "jenkex.name" . }}
-          image: {{ .Values.image.repository | default "my-image-repo/my-image" }}
+         
           ports:
             - containerPort: {{ .Values.containerPort | default 8000 }}
