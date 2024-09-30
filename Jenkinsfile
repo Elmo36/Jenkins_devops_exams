@@ -39,7 +39,7 @@ pipeline {
                     steps {
                         script {
                             // Run tests for the second app
-                            sh 'docker run eltemume/cast:latest test'
+                            sh 'docker run eltemume/movie:latest test'
                         }
                     }
                 }
