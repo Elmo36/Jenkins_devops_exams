@@ -3,16 +3,16 @@ kind: Deployment
 metadata:
   name: {{ include "jenkex.fullname" . }}
   labels:
-    {{- include "jenkex.labels" . | nindent 4 }}
+    {{ include "jenkex.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
-      {{- include "jenkex.selectorLabels" . | nindent 6 }}
+      {{ include "jenkex.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "jenkex.selectorLabels" . | nindent 8 }}
+        {{ include "jenkex.selectorLabels" . | nindent 8 }}
     spec:
       containers:
         - name: {{ include "jenkex.name" . }}
