@@ -1,79 +1,81 @@
 pipeline {
     agent any
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
+    }
     stages {
-        stage('Build Images') {
-            parallel {
-                stage('cast-service') {
-                    steps {
-                        script {
-                            // Build the first Docker image
-                            dir('cast-service') {
-                                sh 'docker build -t eltemume/cast:latest .'
-                            }
-                        }
-                    }
+        stage('Build Movie Service') {
+            steps {
+                script {
+                    movieServiceImage = docker.build("eltemume/movie:tag", "./movie-service")
                 }
-                stage('movie-service') {
-                    steps {
-                        script {
-                            // Build the second Docker image
-                            dir('movie-service') {
-                                sh 'docker build -t eltemume/movie:latest .'
-                            }
-                        }
+            }
+        }
+        stage('Build Cast Service') {
+            steps {
+                script {
+                    castServiceImage = docker.build("eltemume/cast:tag", "./cast-service")
+                }
+            }
+        }
+        stage('Push Movie Service') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'DOCKERHUB_CREDENTIALS') {
+                        movieServiceImage.push("tag")
                     }
                 }
             }
         }
-        stage('Test Images') {
-            parallel {
-                stage('Test cast-service') {
-                    steps {
-                        script {
-                            // Run tests for the first app
-                            sh 'docker run eltemume/cast:latest test'
-                        }
+        stage('Push Cast Service') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'DOCKERHUB_CREDENTIALS') {
+                        castServiceImage.push("tag")
                     }
                 }
-                stage('Test movie-service') {
-                    steps {
-                        script {
-                            // Run tests for the second app
-                            sh 'docker run eltemume/movie:latest test'
-                        }
-                    }
-                }
+            }
+        }
+        stage('Deploy to Dev') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                deployToK8s('dev')
+            }
+        }
+        stage('Deploy to QA') {
+            when {
+                branch 'qa'
+            }
+            steps {
+                deployToK8s('qa')
             }
         }
         stage('Deploy to Staging') {
+            when {
+                branch 'staging'
+            }
             steps {
-                script {
-                    // Deploy both applications to the staging environment
-                    sh 'kubectl apply -f k8s/deployment-cast-staging.yaml -n staging'
-                    sh 'kubectl apply -f k8s/deployment-movie-staging.yaml -n staging'
-                }
+                deployToK8s('staging')
             }
         }
-        stage('Deploy to Production') {
+        stage('Deploy to Prod') {
             when {
                 branch 'master'
             }
             steps {
-                script {
-                    // Deploy both applications to the production environment
-                    sh 'kubectl apply -f k8s/deployment-cast-prod.yaml -n prod'
-                    sh 'kubectl apply -f k8s/deployment-movie-prod.yaml -n prod'
-                }
+                deployToK8s('prod')
             }
-        }
-    }
-    post {
-        success {
-            echo 'Deployment completed successfully for both applications!'
-        }
-        failure {
-            echo 'Deployment failed for one or both applications!'
         }
     }
 }
 
+def deployToK8s(namespace) {
+    sh """
+    kubectl apply -f k8s/movie-service-deployment.yaml --namespace=${namespace}
+    kubectl apply -f k8s/movie-service-service.yaml --namespace=${namespace}
+    kubectl apply -f k8s/cast-service-deployment.yaml --namespace=${namespace}
+    kubectl apply -f k8s/cast-service-service.yaml --namespace=${namespace}
+    """
+}
