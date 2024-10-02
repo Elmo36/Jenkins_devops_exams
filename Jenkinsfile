@@ -7,7 +7,7 @@ pipeline {
         DOCKER_TAG = 'tag'
         DOCKER_HUB_CREDENTIALS_ID = 'f8290316-e09c-4759-8d72-820925f0b8a9'
         KUBE_NAMESPACE_DEV = 'dev'
-        KUBE_NAMESPACE_QA = 'QA'
+        KUBE_NAMESPACE_QA = 'qa'
         KUBE_NAMESPACE_STAGING = 'staging'
         KUBE_NAMESPACE_PROD = 'prod'
         HELM_RELEASE_CAST = 'cast-service'
