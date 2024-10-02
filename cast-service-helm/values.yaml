@@ -9,5 +9,10 @@ service:
   type: ClusterIP
   port: 80
 
-resources: {}
+serviceAccount:
+  create: true            # Set to true to create a new service account
+  name: ""                # Leave empty to generate a name automatically
+  automount: true         # Set automountServiceAccountToken behavior
+  annotations: {}         # You can add any annotations here
 
+resources: {}
