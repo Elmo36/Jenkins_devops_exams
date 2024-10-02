@@ -38,9 +38,9 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                         sh """
-                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service --namespace ${KUBE_NAMESPACE_DEV} \
+                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service-helm --namespace ${KUBE_NAMESPACE_DEV} \
                             --set image.repository=${DOCKER_HUB_REPO_CAST},image.tag=${DOCKER_TAG}
-                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service --namespace ${KUBE_NAMESPACE_DEV} \
+                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service-helm --namespace ${KUBE_NAMESPACE_DEV} \
                             --set image.repository=${DOCKER_HUB_REPO_MOVIE},image.tag=${DOCKER_TAG}
                         """
                     }
