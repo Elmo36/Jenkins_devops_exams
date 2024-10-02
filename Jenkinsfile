@@ -1,88 +1,105 @@
 pipeline {
-    agent any // Use any available agent
+    agent any
+
+    environment {
+        DOCKER_HUB_REPO_CAST = 'eltemume/cast'
+        DOCKER_HUB_REPO_MOVIE = 'eltemume/movie'
+        DOCKER_TAG = 'tag'
+        DOCKER_HUB_CREDENTIALS_ID = 'f8290316-e09c-4759-8d72-820925f0b8a9'
+        KUBE_NAMESPACE_DEV = 'dev'
+        KUBE_NAMESPACE_QA = 'QA'
+        KUBE_NAMESPACE_STAGING = 'staging'
+        KUBE_NAMESPACE_PROD = 'prod'
+        HELM_RELEASE_CAST = 'cast-service'
+        HELM_RELEASE_MOVIE = 'movie-service'
+    }
 
     stages {
-        stage('Checkout') {
+        stage('Build') {
             steps {
-                // Checkout the code from GitHub
-                git url: 'https://github.com/Elmo36/Jenkins_devops_exams.git', branch: 'master'
-            }
-        }
-
-        stage('Build Cast Service') {
-            steps {
-                // Build the Docker image for the cast service
                 script {
-                    sh 'docker build -t eltemume/cast:tag ./cast-service'
+                    docker.build("${DOCKER_HUB_REPO_CAST}:${DOCKER_TAG}", "cast-service")
+                    docker.build("${DOCKER_HUB_REPO_MOVIE}:${DOCKER_TAG}", "movie-service")
                 }
             }
         }
-
-        stage('Build Movie Service') {
+        stage('Push') {
             steps {
-                // Build the Docker image for the movie service
                 script {
-                    sh 'docker build -t eltemume/movie:tag ./movie-service'
+                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_HUB_CREDENTIALS_ID}") {
+                        docker.image("${DOCKER_HUB_REPO_CAST}:${DOCKER_TAG}").push()
+                        docker.image("${DOCKER_HUB_REPO_MOVIE}:${DOCKER_TAG}").push()
+                    }
                 }
             }
         }
-
-        stage('Test') {
-            steps {
-                // Add your testing commands here
-                script {
-                    sh 'echo "Running tests..."'
-                    // For example: sh './run-tests.sh'
-                }
-            }
-        }
-
         stage('Deploy to Dev') {
             steps {
-                // Deploy to development environment
                 script {
-                    sh 'kubectl apply -f ./jenkex/templates/deployment.yaml -n dev'
+                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh """
+                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service --namespace ${KUBE_NAMESPACE_DEV} \
+                            --set image.repository=${DOCKER_HUB_REPO_CAST},image.tag=${DOCKER_TAG}
+                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service --namespace ${KUBE_NAMESPACE_DEV} \
+                            --set image.repository=${DOCKER_HUB_REPO_MOVIE},image.tag=${DOCKER_TAG}
+                        """
+                    }
                 }
             }
         }
-
         stage('Deploy to QA') {
             steps {
-                // Deploy to QA environment
                 script {
-                    sh 'kubectl apply -f ./jenkex/templates/deployment.yaml -n qa'
+                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh """
+                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service --namespace ${KUBE_NAMESPACE_QA} \
+                            --set image.repository=${DOCKER_HUB_REPO_CAST},image.tag=${DOCKER_TAG}
+                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service --namespace ${KUBE_NAMESPACE_QA} \
+                            --set image.repository=${DOCKER_HUB_REPO_MOVIE},image.tag=${DOCKER_TAG}
+                        """
+                    }
                 }
             }
         }
-
         stage('Deploy to Staging') {
             steps {
-                // Deploy to staging environment
                 script {
-                    sh 'kubectl apply -f ./jenkex/templates/deployment.yaml -n staging'
+                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh """
+                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service --namespace ${KUBE_NAMESPACE_STAGING} \
+                            --set image.repository=${DOCKER_HUB_REPO_CAST},image.tag=${DOCKER_TAG}
+                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service --namespace ${KUBE_NAMESPACE_STAGING} \
+                            --set image.repository=${DOCKER_HUB_REPO_MOVIE},image.tag=${DOCKER_TAG}
+                        """
+                    }
                 }
             }
         }
-
-        stage('Deploy to Production') {
+        stage('Deploy to Prod') {
+            when {
+                branch 'master'
+            }
             steps {
-                // Manual approval for production deployment
-                input 'Deploy to Production?'
                 script {
-                    sh 'kubectl apply -f ./jenkex/templates/deployment.yaml -n prod'
+                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh """
+                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service --namespace ${KUBE_NAMESPACE_PROD} \
+                            --set image.repository=${DOCKER_HUB_REPO_CAST},image.tag=${DOCKER_TAG}
+                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service --namespace ${KUBE_NAMESPACE_PROD} \
+                            --set image.repository=${DOCKER_HUB_REPO_MOVIE},image.tag=${DOCKER_TAG}
+                        """
+                    }
                 }
             }
         }
     }
-
     post {
         success {
-            // Actions to perform on success
-            echo 'Pipeline completed successfully!'
+            echo 'Deployment to Kubernetes succeeded!'
         }
         failure {
-            // Actions to perform on failure
-            echo 'Pipeline failed.'
+            echo 'Deployment failed.'
         }
     }
 }
+
