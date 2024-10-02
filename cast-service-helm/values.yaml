@@ -9,5 +9,29 @@ service:
   type: ClusterIP
   port: 80
 
+serviceAccount:
+  create: true
+  name: ""
+  automount: true
+  annotations: {}
+
+ingress:
+  enabled: false          # Set to true to enable ingress
+  name: ""                # Optional: specify a custom name for the ingress
+  path: /
+  pathType: ImplementationSpecific # Can be Prefix or ImplementationSpecific based on your needs
+  annotations: {}         # Add any ingress annotations here
+  hosts:
+    - host: chart-example.local  # Update with your host
+      paths:
+        - /
+  tls: []                   # Specify any TLS configuration if needed
+
+autoscaling:
+  enabled: false           # Set to true to enable HPA
+  minReplicas: 1           # Minimum number of replicas
+  maxReplicas: 10          # Maximum number of replicas
+  targetCPUUtilizationPercentage: 80 # Target CPU utilization percentage
+
 resources: {}
 

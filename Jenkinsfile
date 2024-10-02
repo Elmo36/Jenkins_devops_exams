@@ -52,9 +52,9 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                         sh """
-                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service --namespace ${KUBE_NAMESPACE_QA} \
+                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service-helm --namespace ${KUBE_NAMESPACE_QA} \
                             --set image.repository=${DOCKER_HUB_REPO_CAST},image.tag=${DOCKER_TAG}
-                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service --namespace ${KUBE_NAMESPACE_QA} \
+                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service-helm --namespace ${KUBE_NAMESPACE_QA} \
                             --set image.repository=${DOCKER_HUB_REPO_MOVIE},image.tag=${DOCKER_TAG}
                         """
                     }
@@ -66,9 +66,9 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                         sh """
-                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service --namespace ${KUBE_NAMESPACE_STAGING} \
+                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service-helm --namespace ${KUBE_NAMESPACE_STAGING} \
                             --set image.repository=${DOCKER_HUB_REPO_CAST},image.tag=${DOCKER_TAG}
-                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service --namespace ${KUBE_NAMESPACE_STAGING} \
+                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service-helm --namespace ${KUBE_NAMESPACE_STAGING} \
                             --set image.repository=${DOCKER_HUB_REPO_MOVIE},image.tag=${DOCKER_TAG}
                         """
                     }
@@ -83,9 +83,9 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                         sh """
-                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service --namespace ${KUBE_NAMESPACE_PROD} \
+                        helm upgrade --install ${HELM_RELEASE_CAST} ./cast-service-helm --namespace ${KUBE_NAMESPACE_PROD} \
                             --set image.repository=${DOCKER_HUB_REPO_CAST},image.tag=${DOCKER_TAG}
-                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service --namespace ${KUBE_NAMESPACE_PROD} \
+                        helm upgrade --install ${HELM_RELEASE_MOVIE} ./movie-service-helm --namespace ${KUBE_NAMESPACE_PROD} \
                             --set image.repository=${DOCKER_HUB_REPO_MOVIE},image.tag=${DOCKER_TAG}
                         """
                     }
